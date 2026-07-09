@@ -1,0 +1,203 @@
+# DoWeb CLI Reference
+
+All current DoWeb operations go through:
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs <command> [flags]
+```
+
+The CLI exits non-zero and prints JSON to stderr on failure:
+
+```json
+{
+  "status": "failed",
+  "error": "..."
+}
+```
+
+## Common Path Flags
+
+Use these when running against a non-default layout or a host-mode install:
+
+```bash
+--base-dir /var/lib/doweb
+--nginx-available-dir /etc/doweb/nginx/sites-available
+--nginx-enabled-dir /etc/nginx/conf.d
+--nginx-snippet-dir /etc/doweb/nginx/snippets
+--nginx-bin nginx
+--reload-cmd 'nginx -s reload'
+```
+
+Docker mode usually uses deploy flags returned by `install-nginx`.
+
+## `install-nginx`
+
+Prepare a remote host for DoWeb-managed Nginx.
+
+Default Docker mode:
+
+```bash
+export DOWEB_SSH_PASSWORD='...'
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs install-nginx \
+  --ssh-host 114.55.61.32 \
+  --ssh-user root \
+  --password-env DOWEB_SSH_PASSWORD
+```
+
+Host mode for an existing Nginx on 80/443:
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs install-nginx \
+  --mode host \
+  --ssh-host 114.55.61.32 \
+  --ssh-user root \
+  --password-env DOWEB_SSH_PASSWORD
+```
+
+Important flags:
+
+- `--mode docker|host`: Docker is default.
+- `--password-env NAME`: reads SSH password from an environment variable.
+- `--password-file PATH`: reads SSH password from a local file.
+- `--dry-run true`: prints the remote script and deploy flags without changing
+  the host.
+- `--http-port` and `--https-port`: Docker port bindings.
+- `--container-name` and `--image`: Docker runtime settings.
+
+Passwords must not be committed or copied into docs, SiteSpec or state files.
+
+## `domain-set` and `domain-list`
+
+Record trusted base-domain metadata for automatic subdomain assignment.
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs domain-set \
+  --domain aihub.org.cn \
+  --host-ip 114.55.61.32 \
+  --provider aliyun
+
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs domain-list
+```
+
+`domain-set` does not update provider DNS. It writes DoWeb metadata under
+`/var/lib/doweb/domains/<domain>.json`.
+
+## `render`
+
+Render a candidate Nginx config without writing it.
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs render \
+  --site-id demo \
+  --domain demo.example.com \
+  --dist /path/to/dist \
+  --proxy /api/=https://api.example.com
+```
+
+Use this before risky changes to inspect the generated server block.
+
+## `deploy`
+
+Publish a completed `dist/` release and activate Nginx config.
+
+Static frontend:
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs deploy \
+  --site-id vibe-demo \
+  --domain-base aihub.org.cn \
+  --dist /path/to/dist \
+  --health-url http://vibe-demo.aihub.org.cn/
+```
+
+Root reverse proxy:
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs deploy \
+  --site-id proxy-106 \
+  --domain proxy-106.aihub.org.cn \
+  --dist /path/to/dist \
+  --proxy /=http://106.54.197.139/ \
+  --health-url http://proxy-106.aihub.org.cn/
+```
+
+Load-balanced proxy:
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs deploy \
+  --site-id api-demo \
+  --domain api-demo.example.com \
+  --dist /path/to/dist \
+  --upstream app=http://127.0.0.1:3001,http://127.0.0.1:3002 \
+  --proxy /api/=upstream:app
+```
+
+TLS by explicit paths:
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs deploy \
+  --site-id secure-demo \
+  --domain secure.example.com \
+  --dist /path/to/dist \
+  --tls-cert /etc/letsencrypt/live/secure.example.com/fullchain.pem \
+  --tls-key /etc/letsencrypt/live/secure.example.com/privkey.pem
+```
+
+Current TLS behavior: when both `--tls-cert` and `--tls-key` are present, the
+rendered server listens on `443 ssl http2`; otherwise it listens on `80`.
+
+## `check`
+
+Validate Nginx and optional health URLs.
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs check \
+  --site-id demo \
+  --health-url http://demo.example.com/
+```
+
+`check` does not alter site state.
+
+## `rollback`
+
+Restore the previous release and rendered config.
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs rollback \
+  --site-id demo
+```
+
+Rollback fails if there is no previous release or if the previous release files
+are missing. It restores activation on validation/reload failure.
+
+## `config-get` and `config-set`
+
+Read or replace the complete managed Nginx config for a site.
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs config-get \
+  --site-id demo
+
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs config-set \
+  --site-id demo \
+  --config-file /path/to/candidate.conf
+```
+
+`config-set` must contain an Nginx `server {}` block. It writes the candidate,
+runs `nginx -t`, reloads, and restores the previous config if validation or
+reload fails.
+
+## `snippet-set`
+
+Write a named server-block snippet.
+
+```bash
+node DoSuite/DoWeb/Skill/scripts/doweb.mjs snippet-set \
+  --site-id demo \
+  --name headers \
+  --snippet-file /path/to/headers.conf
+```
+
+Snippets are included inside the generated `server` block. They must not contain
+`events {}`, `http {}` or `stream {}` blocks.
+

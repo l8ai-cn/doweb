@@ -1,0 +1,100 @@
+{
+  "schema": "dosuite.skill-resources.v1",
+  "product": "DoWeb",
+  "updatedAt": "2026-07-07",
+  "publicConsole": "https://doweb.l8ai.cn",
+  "defaultDoopsTarget": {
+    "name": "gw-oilan-node",
+    "cluster": "doops-oilan",
+    "instance": "oilan-node"
+  },
+  "domainRegistry": [
+    {
+      "baseDomain": "l8ai.cn",
+      "provider": "hichina",
+      "ingressIp": "89.250.81.244",
+      "status": "partially-blocked",
+      "blockedRecords": ["doops.l8ai.cn"]
+    }
+  ],
+  "resources": [
+    {
+      "id": "site-home",
+      "name": "l8ai.cn",
+      "kind": "Static Site",
+      "endpoint": "https://l8ai.cn",
+      "owner": "brand",
+      "status": "healthy",
+      "risk": "none",
+      "tags": ["static", "tls", "ingress"],
+      "note": "Brand site. Keep build artifact, entry validation and rollback version for each release."
+    },
+    {
+      "id": "site-doops",
+      "name": "doops.l8ai.cn",
+      "kind": "Console",
+      "endpoint": "https://doops.l8ai.cn",
+      "owner": "platform",
+      "status": "warning",
+      "risk": "public DNS still points to the old gateway",
+      "tags": ["next", "olandingress", "dns-blocked"],
+      "note": "DoOps console. OLAND Ingress is ready, but public DNS must be corrected before normal public access."
+    },
+    {
+      "id": "site-security",
+      "name": "dosecurity.l8ai.cn",
+      "kind": "Console",
+      "endpoint": "https://dosecurity.l8ai.cn",
+      "owner": "security",
+      "status": "healthy",
+      "risk": "none",
+      "tags": ["next", "tls", "agent"],
+      "note": "DoSecurity console. Public DNS, TLS, Ingress and browser rendering were aligned in the post-rpcfix evidence."
+    },
+    {
+      "id": "site-dosql",
+      "name": "dosql.l8ai.cn",
+      "kind": "Console",
+      "endpoint": "https://dosql.l8ai.cn",
+      "owner": "data-platform",
+      "status": "healthy",
+      "risk": "none",
+      "tags": ["next", "tls", "agent"]
+    },
+    {
+      "id": "site-dodns",
+      "name": "dodns.l8ai.cn",
+      "kind": "Console",
+      "endpoint": "https://dodns.l8ai.cn",
+      "owner": "platform",
+      "status": "healthy",
+      "risk": "none",
+      "tags": ["next", "tls", "agent"]
+    },
+    {
+      "id": "site-doweb",
+      "name": "doweb.l8ai.cn",
+      "kind": "Console",
+      "endpoint": "https://doweb.l8ai.cn",
+      "owner": "platform",
+      "status": "healthy",
+      "risk": "none",
+      "tags": ["next", "tls", "agent"]
+    },
+    {
+      "id": "site-api",
+      "name": "api.l8ai.cn",
+      "kind": "Reverse Proxy",
+      "endpoint": "https://api.l8ai.cn",
+      "owner": "platform",
+      "status": "review",
+      "risk": "upstream health review",
+      "tags": ["proxy", "upstream", "headers"]
+    }
+  ],
+  "quickPrompts": [
+    "Generate a site model, domain plan, Nginx or Ingress plan, certificate requirements, dry-run, verification and rollback for a new Next console.",
+    "Check why doops.l8ai.cn public access is not serving the OLAND version. Separate DNS, Ingress, Nginx, TLS, browser cache and upstream service causes.",
+    "Run a site health inspection for dosecurity.l8ai.cn covering DNS, TLS, HTTP status, static assets, console errors and first viewport."
+  ]
+}
