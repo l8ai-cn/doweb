@@ -1,5 +1,11 @@
 # DoWeb
 
+> Unified runtime note: the end-user DoWeb path is now integrated into the
+> `doops.sh` repository. Use the unified DoOps Gateway session, target and
+> `doops web` CLI or the DoOps Console website workbench. This repository remains
+> the source for the deterministic Nginx engine and offline development docs;
+> do not create a second login or target registry.
+
 DoWeb is the AI-first frontend deployment and Nginx operations product in DoSuite. It
 wraps Nginx publishing, reverse proxying, validation and rollback behind a
 doagent-friendly workflow.
